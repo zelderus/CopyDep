@@ -1,0 +1,5 @@
+﻿{
+  "dirFrom": "c:\\test\\d1\\",
+  "dirFromIgnore": "c:\\test\\d1\\src\\*",
+  "dirTo": "c:\\test\\d2\\"
+}

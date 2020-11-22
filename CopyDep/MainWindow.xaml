@@ -1,0 +1,127 @@
+﻿<Window x:Class="CopyDep.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CopyDep" 
+        xmlns:localConverters="clr-namespace:CopyDep.Converters"
+        xmlns:localModels="clr-namespace:CopyDep.Models"
+        mc:Ignorable="d"
+        Title="CopyDep" Height="548" Width="800" WindowStyle="SingleBorderWindow" ResizeMode="CanMinimize"
+        Icon="/Assets/app.ico"
+        >
+    <Window.Resources>
+        <Image x:Key="ImgAdd" Source="/Assets/Images/plus.png" Width="18" Height="18" />
+        <Image x:Key="ImgRemove" Source="/Assets/Images/minus.png" Width="18" Height="18" />
+        <!--<Image x:Key="ImgQuestion" Source="/Assets/Images/question.png" Width="18" Height="18" />-->
+        <localConverters:StringNotNullOrEmptyToBoolConverter x:Key="stringNotNullConverter" />
+        <localConverters:ColorErrorConverter x:Key="colorErrorConverter" />
+        <localConverters:DirTreeConverter_Icon x:Key="dirTreeConverter_Icon" />
+        <localConverters:DirTreeConverter_FontWeight x:Key="dirTreeConverter_FontWeight" />
+        <localConverters:DirTreeConverter_ExtraText x:Key="dirTreeConverter_ExtraText" />
+        <localConverters:DirTreeConverter_FontColorByStatus x:Key="dirTreeConverter_FontColorByStatus" />
+        <localModels:Status x:Key="status" Message="initing.." IsError="False" />
+        <localModels:ProjectsIn x:Key="projects" />
+        <localModels:DirInfoModel x:Key="infoModel" />
+    </Window.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*" />
+            <ColumnDefinition Width="2*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="9*" />
+            <RowDefinition Height="0.5*" />
+        </Grid.RowDefinitions>
+
+        <GroupBox Header=">" Grid.Column="0" Grid.Row="0" Margin="10,10,10,10" Background="#FFF3F3F3">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Height="24">
+                    <ComboBox DataContext="{StaticResource projects}" ItemsSource="{Binding Items}" DisplayMemberPath="Title" SelectedValue="{Binding Path=Current}" Height="22" Width="150" SelectionChanged="ComboBox_Projects_Changed" />
+                    <TextBox Text="{Binding Current.Title, Mode=TwoWay, Source={StaticResource projects}, UpdateSourceTrigger=PropertyChanged}" TextWrapping="NoWrap" Height="22" Width="140" Margin="5,0,0,0"/>
+                    <Button Content="{StaticResource ImgAdd}" ToolTip="Добавить проект" BorderThickness="0" Height="22" Width="22" Margin="15,0,0,0" Click="Button_ProjectAdd_Click"/>
+                    <Button Content="{StaticResource ImgRemove}" ToolTip="Удалить проект" BorderThickness="0" Height="22" Width="22" Margin="5,0,0,0" Click="Button_ProjectRemove_Click"/>
+                </StackPanel>
+                <Label Content="Источник" FontWeight="DemiBold" Padding="4,0,5,0" Margin="0,10,0,0"/>
+                <TextBlock Text="Директория, содержимое которой будет копироваться.&#10;Примеры: c:\test или c:\test\* со всей вложенной структурой." Height="30" TextWrapping="Wrap" FontWeight="Light" FontSize="10"/>
+                <TextBox Text="{Binding Current.DirFrom, Mode=TwoWay, Source={StaticResource projects}, UpdateSourceTrigger=PropertyChanged}" TextWrapping="NoWrap" Height="22" Margin="0,0,0,10" ScrollViewer.VerticalScrollBarVisibility="Disabled" HorizontalAlignment="Stretch" MouseDoubleClick="TextBox_MouseDoubleClick_DirFrom"/>
+                <Label Content="Исключения" FontWeight="DemiBold" Margin="0,10,0,0" Padding="4,0,5,0"/>
+                <TextBlock Text="Директории (с новой строчки), содержимое которых НЕ будет копироваться.&#10;Примеры: c:\test\src или c:\test\src\*" Height="30" TextWrapping="Wrap" FontWeight="Light" FontSize="10"/>
+                <TextBox Text="{Binding Current.DirFromIgnore, Mode=TwoWay, Source={StaticResource projects}, UpdateSourceTrigger=PropertyChanged}" TextWrapping="NoWrap" Height="65" AcceptsReturn="True" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                <Label Content="Назначение" FontWeight="DemiBold" Margin="0,10,0,0" Padding="4,0,5,0"/>
+                <TextBlock Text="Директория, в которую будет копироваться" Height="16" TextWrapping="Wrap" FontWeight="Light" FontSize="10"/>
+                <TextBox Text="{Binding Current.DirTo, Mode=TwoWay, Source={StaticResource projects}, UpdateSourceTrigger=PropertyChanged}" TextWrapping="NoWrap" Height="22" ScrollViewer.VerticalScrollBarVisibility="Disabled" MouseDoubleClick="TextBox_MouseDoubleClick_DirTo"/>
+                <Label Content="Параметры" FontWeight="DemiBold" Margin="0,10,0,0" Padding="4,0,5,0"/>
+                <CheckBox Content="учитывать дату создания файлов (только новее)" IsChecked="{Binding Current.Options.ByCreateTime, Mode=TwoWay, Source={StaticResource projects}, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,0" />
+                <CheckBox Content="учитывать дату изменения файлов (только новее)" IsChecked="{Binding Current.Options.ByLastWriteTime, Mode=TwoWay, Source={StaticResource projects}, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,0" />
+                <CheckBox Content="учитывать размер файлов" IsChecked="{Binding Current.Options.ByLength, Mode=TwoWay, Source={StaticResource projects}, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,0" />
+                <CheckBox Content="учитывать контент файлов" IsChecked="{Binding Current.Options.ByContent, Mode=TwoWay, Source={StaticResource projects}, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,0" />
+                <Separator Margin="20,10,20,0"/>
+                <StackPanel Orientation="Horizontal" Height="25" HorizontalAlignment="Right" Margin="0,8,0,0" VerticalAlignment="Bottom">
+                    <Button Content="Сохранить" HorizontalAlignment="Right" Click="Button_Save" VerticalAlignment="Bottom" Margin="0,0,20,0" Padding="8, 2"/>
+                    <Button Content="Подготовка" IsEnabled="{Binding Source={StaticResource infoModel}, Path=CanPrepare, Mode=OneWay}" HorizontalAlignment="Right" Click="Button_Prepare" VerticalAlignment="Bottom" Margin="0,0,0,0" Padding="8, 2"/>
+                </StackPanel>
+                
+            </StackPanel>
+        </GroupBox>
+
+        <GroupBox Header="=" Grid.Column="1" Grid.Row="0" Margin="10,10,10,10" Background="#FFF3F3F3">
+            <StackPanel VerticalAlignment="Stretch">
+                <Grid Height="52">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="2*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <Label Content="Всего файлов в источнике" FontWeight="Light" Padding="4,0,5,0" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                        <Label Content="Новых файлов" FontWeight="Light" Padding="4,0,5,0" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                        <Label Content="Файлов на замену" FontWeight="Light" Padding="4,0,5,0" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <Label DataContext="{StaticResource infoModel}" Content="{Binding TotalFilesFrom}" FontWeight="Light" Padding="4,0,5,0" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                        <Label DataContext="{StaticResource infoModel}" Content="{Binding NewFilesFrom}" FontWeight="Light" Padding="4,0,5,0" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                        <Label DataContext="{StaticResource infoModel}" Content="{Binding ReplaceFilesFrom}" FontWeight="Light" Padding="4,0,5,0" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    </StackPanel>
+                </Grid>
+                <TreeView DataContext="{StaticResource infoModel}" ItemsSource="{Binding Items}" Height="346">
+                    <TreeView.Resources>
+                        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#FFFBFF9C" />
+                        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#44FBFF9C" />
+                        <Style TargetType="{x:Type TreeViewItem}">
+                            <Setter Property="IsExpanded" Value="True">
+                            </Setter>
+                        </Style>
+                        <HierarchicalDataTemplate DataType="{x:Type localModels:DirTreeViewItemModel}" ItemsSource="{Binding Items}">
+                            <StackPanel Orientation="Horizontal">
+                                <Image Source="{Binding Converter={StaticResource dirTreeConverter_Icon}, Path=IsDir, Mode=OneWay}" Margin="0,0,5,0" Width="14" Height="14" />
+                                <TextBlock Text="{Binding Title}" Foreground="{Binding Converter={StaticResource dirTreeConverter_FontColorByStatus}, Path=Status, Mode=OneWay}" ToolTipService.IsEnabled="{Binding MessageView, Converter={StaticResource stringNotNullConverter}}" ToolTip="{Binding MessageView}" FontWeight="{Binding Converter={StaticResource dirTreeConverter_FontWeight}, Path=IsDir, Mode=OneWay}"  />
+                                <TextBlock Text="{Binding Converter={StaticResource dirTreeConverter_ExtraText}, Path=IsNew, Mode=OneWay}" Margin="5,0,0,0" Foreground="Green" />
+                            </StackPanel>
+                        </HierarchicalDataTemplate>
+                    </TreeView.Resources>
+                </TreeView>
+
+                <!-- Если надумаем вывод ошибок списком, то включить (и не забыть уменьшить грид сверху по высоте) >
+                <Label Content="Ошибки" FontWeight="Light" Padding="4,0,5,0" Margin="0,6,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                <ListView DataContext="{StaticResource infoModel}" ItemsSource="{Binding Errors}" Height="76" Margin="0,2,0,0" />
+                -->
+                
+                <Grid Margin="0,14,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <CheckBox Grid.Column="0" Content="участвуют и с ошибками" ToolTip="файлы, которые при проверке были с ошибками, все-равно попытаться их скопировать" IsChecked="{Binding IsCopyWithErrorAfterPrepare, Mode=TwoWay, Source={StaticResource infoModel}, UpdateSourceTrigger=PropertyChanged}" Margin="0,2,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Content="Выполнить" IsEnabled="{Binding Source={StaticResource infoModel}, Path=CanWork, Mode=OneWay}" HorizontalAlignment="Right" Click="Button_Go" VerticalAlignment="Center" Margin="0,0,0,0" Padding="8, 2" Width="80"/>
+                </Grid>
+
+
+            </StackPanel>
+        </GroupBox>
+
+        <Label Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2" Content="{Binding Source={StaticResource status}, Path=Message, Mode=OneWay}" VerticalContentAlignment="Center" HorizontalContentAlignment="Stretch" Padding="5,0,5,0" Foreground="{Binding Source={StaticResource status}, Converter={StaticResource colorErrorConverter}, Path=IsError, Mode=OneWay}" Margin="10,0,0,0" />
+
+    </Grid>
+
+</Window>
