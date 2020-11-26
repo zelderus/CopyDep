@@ -70,34 +70,52 @@ namespace CopyDep.Services.CopyWorker
             }
             var dirUtils = new DirectoryUtils();
             var totalFiles = 0;
-
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            var filePrepareIndex = 0;
+            Action<String> onCheckFn = (d) =>
+            {
+                TimeSpan ts = stopWatch.Elapsed; //? а точно ли в этом потоке замер времени останалвивать?
+                DGUI.BeginInvoke(() =>
+                {
+                    status.Message = String.Format("Подготовка (шаг 1).. {0} ({1:00}:{2:00}:{3:00}) -> {4}", ++filePrepareIndex, ts.Hours, ts.Minutes, ts.Seconds, d);
+                });
+            };
             //+ 1. ищем все папки для работы (исходящие)
-            var dirs = dirUtils.SearchDirs(StringUtils.StringSplitNewLines(projectSettings.DirFrom));//, Conventions.DirSeparatorStr);
-            var dirsIgnore = dirUtils.SearchDirs(StringUtils.StringSplitNewLines(projectSettings.DirFromIgnore));//, Conventions.DirSeparatorStr);
-            dirs.RemoveAll(d => dirsIgnore.Contains(d)); //- для оптимизации: директории-исключения можно было на ходу проверять на начало вхождения пути, а не собирать второй все папки
+            var dirsIgnore = dirUtils.SearchDirs(StringUtils.StringSplitNewLines(projectSettings.DirFromIgnore), null, onCheckFn);//, Conventions.DirSeparatorStr);
+            var dirs = dirUtils.SearchDirs(StringUtils.StringSplitNewLines(projectSettings.DirFrom), dirsIgnore, onCheckFn);//, Conventions.DirSeparatorStr);
 
             //+ 2. собираем все файлы (с их полными путями) для копирования
-            var files = dirUtils.SearchFiles(dirs);
+            var filePrepareTwoIndex = 0;
+            Action<String> onCheckFilesFn = (f) =>
+            {
+                TimeSpan ts = stopWatch.Elapsed; //? а точно ли в этом потоке замер времени останалвивать?
+                DGUI.BeginInvoke(() =>
+                {
+                    status.Message = String.Format("Подготовка (шаг 2).. {0} ({1:00}:{2:00}:{3:00}) -> {4}", ++filePrepareTwoIndex, ts.Hours, ts.Minutes, ts.Seconds, f);
+                });
+            };
+            var files = dirUtils.SearchFiles(dirs, onCheckFilesFn);
             totalFiles = files.Count;
 
             //+ 3. ищем среди имеющихся по назначению уже точно такие-же (если нет таких файлов или новые, то отдаем в работу) - ради чего все и затеялось
             var dirFromStr = projectSettings.DirFrom;
             if (dirFromStr.EndsWith(Conventions.DirSubdirSymbol)) dirFromStr = dirFromStr.Remove(dirFromStr.Length - 1);
             var fileIndex = 0;
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
             foreach (var file in files)
             {
-                TimeSpan ts = stopWatch.Elapsed;
+                TimeSpan ts = stopWatch.Elapsed; //? а точно ли в этом потоке замер времени останалвивать?
                 DGUI.BeginInvoke(() =>
                 {
-                    status.Message = String.Format("Подготовка.. {0}/{1} ({2:00}:{3:00}:{4:00})", ++fileIndex, totalFiles, ts.Hours, ts.Minutes, ts.Seconds);
+                    status.Message = String.Format("Подготовка (шаг 3).. {0}/{1} ({2:00}:{3:00}:{4:00})", ++fileIndex, totalFiles, ts.Hours, ts.Minutes, ts.Seconds);
                 });
                 if (String.IsNullOrWhiteSpace(file)) continue;
                 if (!file.StartsWith(dirFromStr)) continue; //- странно
                 //- приводим к пути назначению
                 var fileOut = String.Format("{0}\\{1}", projectSettings.DirTo, file.Remove(0, dirFromStr.Length));
                 fileOut = fileOut.Replace("\\\\", "\\"); //? to regexp (учесть не только двойные слэши, но и множественные?)
+                // NOTE: метод "infoModel.AddFile()" может не лучший по оптимизации для TreeView
+                // NOTE: возможно, для TreeView делать разовую обновку быстрее, чем на каждом файле
                 //- если новый, то точно копируем
                 if (!dirUtils.ExistsFile(fileOut))
                 {

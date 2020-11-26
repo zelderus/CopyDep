@@ -63,13 +63,14 @@ namespace CopyDep.Utils
 
 
 
-        private void SearchInDirDir(String dir, List<String> outDirs, Boolean withInner)
+        private void SearchInDirDir(String dir, List<String> outDirs, List<String> dirsIgnore, Boolean withInner, Action<String> onCheckFn)
         {
             if (String.IsNullOrWhiteSpace(dir)) return;
             if (dir.StartsWith(Conventions.DirCommented)) return;
+            if (onCheckFn != null) onCheckFn(dir);
             if (!this.ExistsDir(dir)) return;
             if (dir.EndsWith("\\")) dir = dir.Remove(dir.Length - 1);
-            outDirs.Add(dir);
+            if (dirsIgnore == null || !dirsIgnore.Contains(dir)) outDirs.Add(dir);
             if (withInner)
             {
                 var subDirs = this.GetSubDirs(dir);
@@ -77,14 +78,14 @@ namespace CopyDep.Utils
                 {
                     foreach(var subDir in subDirs)
                     {
-                        SearchInDirDir(subDir, outDirs, withInner);
+                        SearchInDirDir(subDir, outDirs, dirsIgnore, withInner, onCheckFn);
                     }
                 }
             }
         }
 
 
-        public List<String> SearchDirs(List<String> dirsInput) //, String dirSeparator)
+        public List<String> SearchDirs(List<String> dirsInput, List<String> dirsIgnore, Action<String> onCheckFn) //, String dirSeparator)
         {
             var dirs = new List<String>();
             if (dirsInput == null || !dirsInput.Any()) return dirs;
@@ -94,22 +95,25 @@ namespace CopyDep.Utils
                 var dirSearch = dir;
                 var withInner = dirSearch.EndsWith(Conventions.DirSubdirSymbol);
                 if (withInner) dirSearch = dirSearch.Remove(dirSearch.Length - Conventions.DirSubdirSymbol.Length);
-                SearchInDirDir(dirSearch, dirs, withInner);
+                SearchInDirDir(dirSearch, dirs, dirsIgnore, withInner, onCheckFn);
             }
             return dirs;
         }
 
 
 
-        public List<String> SearchFiles(List<String> dirsInput, bool topDirectoryOnly = true, string searchPattern = "*")
+        public List<String> SearchFiles(List<String> dirsInput, Action<String> onCheckFn, bool topDirectoryOnly = true, string searchPattern = "*")
         {
             var files = new List<String>();
             if (dirsInput == null || !dirsInput.Any()) return files;
             foreach (var dir in dirsInput)
             {
                 if (String.IsNullOrWhiteSpace(dir)) continue;
-                foreach (string file in Directory.EnumerateFiles(dir, searchPattern, topDirectoryOnly ? SearchOption.TopDirectoryOnly : SearchOption.AllDirectories))
+                if (onCheckFn != null) onCheckFn(dir);
+                var filesInDir = Directory.EnumerateFiles(dir, searchPattern, topDirectoryOnly ? SearchOption.TopDirectoryOnly : SearchOption.AllDirectories);
+                foreach (string file in filesInDir)
                 {
+                    if (onCheckFn != null) onCheckFn(file);
                     files.Add(file);
                 }
             }

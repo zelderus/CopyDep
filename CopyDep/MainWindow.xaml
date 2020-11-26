@@ -83,13 +83,12 @@
                         <Label DataContext="{StaticResource infoModel}" Content="{Binding ReplaceFilesFrom}" FontWeight="Light" Padding="4,0,5,0" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
                     </StackPanel>
                 </Grid>
-                <TreeView DataContext="{StaticResource infoModel}" ItemsSource="{Binding Items}" Height="346">
+                <TreeView DataContext="{StaticResource infoModel}" ItemsSource="{Binding Items}" Height="346" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling">
                     <TreeView.Resources>
                         <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#FFFBFF9C" />
                         <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#44FBFF9C" />
                         <Style TargetType="{x:Type TreeViewItem}">
-                            <Setter Property="IsExpanded" Value="True">
-                            </Setter>
+                            <Setter Property="IsExpanded" Value="True"/>
                         </Style>
                         <HierarchicalDataTemplate DataType="{x:Type localModels:DirTreeViewItemModel}" ItemsSource="{Binding Items}">
                             <StackPanel Orientation="Horizontal">
@@ -97,6 +96,11 @@
                                 <TextBlock Text="{Binding Title}" Foreground="{Binding Converter={StaticResource dirTreeConverter_FontColorByStatus}, Path=Status, Mode=OneWay}" ToolTipService.IsEnabled="{Binding MessageView, Converter={StaticResource stringNotNullConverter}}" ToolTip="{Binding MessageView}" FontWeight="{Binding Converter={StaticResource dirTreeConverter_FontWeight}, Path=IsDir, Mode=OneWay}"  />
                                 <TextBlock Text="{Binding Converter={StaticResource dirTreeConverter_ExtraText}, Path=IsNew, Mode=OneWay}" Margin="5,0,0,0" Foreground="Green" />
                             </StackPanel>
+                            <HierarchicalDataTemplate.ItemContainerStyle>
+                                <Style TargetType="TreeViewItem">
+                                    <Setter Property="IsExpanded" Value="False"/>
+                                </Style>
+                            </HierarchicalDataTemplate.ItemContainerStyle>
                         </HierarchicalDataTemplate>
                     </TreeView.Resources>
                 </TreeView>
