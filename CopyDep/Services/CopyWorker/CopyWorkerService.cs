@@ -238,9 +238,10 @@ namespace CopyDep.Services.CopyWorker
             var currentIndex = 0;
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
+            var totalForCopy = infoModel.NewFilesFrom + infoModel.ReplaceFilesFrom; //- в идеале подсчитать с учетом отмененных (когда будет реализация)
             foreach (var item in infoModel.Items)
             {
-                CopyItemWithInners(DGUI, infoModel, item, status, infoModel.TotalFilesFrom, stopWatch, ref currentIndex);
+                CopyItemWithInners(DGUI, infoModel, item, status, totalForCopy, stopWatch, ref currentIndex);
             }
             stopWatch.Stop();
             //+ stats
@@ -267,16 +268,17 @@ namespace CopyDep.Services.CopyWorker
             if (item == null) return;
             if (item.IsExcludeFromWork) return;
             if (!infoModel.IsCopyWithErrorAfterPrepare && !item.IsDir && item.Status == DirTreeViewItemModelStatus.Error) return; // с ошибками не трогаем
-            var index = currentIndex++;
-            //+ count (loading steps)
-            TimeSpan ts = stopWatch.Elapsed;
-            DGUI.BeginInvoke(() =>
-            {
-                status.Message = String.Format("Копирование.. {0}/{1} ({2:00}:{3:00}:{4:00})", index, totalCount, ts.Hours, ts.Minutes, ts.Seconds);
-            });
             //+ copy file
             if (!item.IsDir)
             {
+                //+ count (loading steps) - только файлы считаем
+                var index = currentIndex++;
+                TimeSpan ts = stopWatch.Elapsed;
+                DGUI.BeginInvoke(() =>
+                {
+                    status.Message = String.Format("Копирование.. {0}/{1} ({2:00}:{3:00}:{4:00})", index, totalCount, ts.Hours, ts.Minutes, ts.Seconds);
+                });
+
                 try
                 {
                     System.IO.File.Copy(item.SourcePath, item.DistancePath, true);
